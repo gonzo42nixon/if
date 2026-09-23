@@ -106,6 +106,22 @@
   async function loadSource() {
     try {
       const params=new URLSearchParams(location.search);
+      if(!params.has('doc')&&params.get('source')!=='ea'){
+        const client=params.get('client')||localStorage.getItem('orcai-active-client')||'ACME';
+        $('loadStatus').textContent='Gespeicherte Dokumentationen werden gesucht …';
+        const matches=await OrcaiIfVersions.find(client,selected.model,selected.id);
+        if(matches.length){
+          const latest=matches[0];params.set('doc',latest.key);params.set('client',client);params.delete('version');
+          history.replaceState(null,'',location.pathname+'?'+params.toString());
+          if(matches.length>1){
+            document.getElementById('savedDocumentChoice')?.remove();
+            const select=el('select');select.id='savedDocumentChoice';select.setAttribute('aria-label','Gespeicherte Dokumentreihe auswählen');
+            matches.forEach(m=>{const option=el('option',m.key+' · V'+m.entry.number+' · '+new Date(m.entry.date).toLocaleString('de-DE'),select);option.value=m.key;});
+            select.onchange=()=>{const target=new URL(location.href);target.searchParams.set('doc',select.value);target.searchParams.delete('version');location.assign(target.href);};
+            $('loadStatus').after(select);
+          }
+        }else $('loadStatus').textContent='Keine zugängliche gespeicherte Dokumentation in '+client+' gefunden. EA-Ausgangsstand wird geladen.';
+      }
       if(params.has('doc')){
         const record=await OrcaiIfVersions.read(params.get('client'),params.get('doc'),params.get('version'));
         await render(record.payload.source,'Gespeicherte Dokumentation · Version '+record.entry.number);
@@ -165,8 +181,8 @@
     try { await navigator.clipboard.writeText($('permalink').href); $('copyStatus').textContent = 'Cockpit-Link kopiert (lädt den Modellstand, nicht die lokale Übergabe).'; }
     catch (_) { $('copyStatus').textContent = 'Bitte den sichtbaren Link manuell kopieren.'; }
   };
-  $('selection').onsubmit = event => { event.preventDefault(); location.assign(model.canonicalUrl($('model').value.trim(), $('interfaceId').value.trim(), location.origin)); };
-  $('refresh').onclick = () => { if (selected?.id) location.assign(model.canonicalUrl(selected.model, selected.id, location.origin)); };
+  $('selection').onsubmit = event => { event.preventDefault(); const target=new URL(model.canonicalUrl($('model').value.trim(), $('interfaceId').value.trim(), location.origin));target.searchParams.set('client',new URLSearchParams(location.search).get('client')||localStorage.getItem('orcai-active-client')||'ACME');location.assign(target.href); };
+  $('refresh').onclick = () => { if (selected?.id&&confirm('EA-Ausgangsstand anzeigen? Gespeicherte Dokumentfassungen bleiben unverändert.')){const target=new URL(model.canonicalUrl(selected.model,selected.id,location.origin));target.searchParams.set('source','ea');target.searchParams.set('client',new URLSearchParams(location.search).get('client')||localStorage.getItem('orcai-active-client')||'ACME');location.assign(target.href);} };
   try {
     selected = model.parameters(location.search); $('model').value = selected.model; $('interfaceId').value = selected.id;
     const ea = new URL('/ea/', location.origin); ea.searchParams.set('model', selected.model); if (selected.id) ea.searchParams.set('int', selected.id);
