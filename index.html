@@ -1,0 +1,60 @@
+﻿<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ORCAI · Interface-Cockpit</title>
+  <link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="./shared.css?v=20260826-album-background-style1">
+  <link rel="stylesheet" href="./app-launcher.css?v=20260922-04">
+  <link rel="stylesheet" href="./cockpit.css?v=20260923-01"><link rel="stylesheet" href="./shell.css?v=20260922-08">
+  <link rel="stylesheet" href="./vendor/diagram-js-18.29.1.css">
+  <link rel="stylesheet" href="./process-diagrams.css?v=20260923-01">
+  <link rel="stylesheet" href="./data-flow.css?v=20260922-01">
+  <link rel="stylesheet" href="./document-editor.css?v=20260923-01">
+  <link rel="stylesheet" href="./compact-layout.css?v=20260923-02">
+  <link rel="stylesheet" href="./agent-layout.css?v=20260923-02">
+</head>
+<body>
+  <orcai-app-shell help-url="/markdown/?key=ORCAI-260922-01H00-MD-IFHLP"></orcai-app-shell>
+  <nav class="appbar" aria-label="ORCAI Navigation"><a class="if-app-logo" href="/if/" title="Integrations-Cockpit" aria-label="Integrations-Cockpit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="6" height="10" rx="2"/><rect x="16" y="7" width="6" height="10" rx="2"/><path d="M8 12h8m-3-3 3 3-3 3"/></svg></a><strong>IF · Integrations-Cockpit</strong><button id="print" type="button">Drucken / PDF</button><button id="agentToggle" type="button" aria-expanded="false" aria-controls="agentDrawer">✦ AI Agent</button></nav>
+  <form id="selection" aria-label="Integration auswählen"><label>Modell-ID <input id="model" required aria-label="Modell-ID"></label><label>Interface-ID <input id="interfaceId" required placeholder="JSD-INT-03" aria-label="Interface-ID"></label><button class="if-send-button" type="submit" title="Integration laden" aria-label="Integration laden"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3.5 22 12 3 20.5 5.8 13 14 12 5.8 11Z"/></svg></button><button id="refresh" type="button" title="EA-Stand neu laden" aria-label="EA-Stand neu laden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 4v5h-5M20 9a8.2 8.2 0 1 0 .2 6"/></svg></button></form>
+  <p id="loadStatus" role="status">EA-Modell wird geladen …</p>
+  <main class="page" id="cockpit" hidden>
+    <header class="doc-head"><h1 id="title"></h1><div class="sub" id="subtitle"></div><span class="badge yellow">MODELLIERT · KEINE FREIGABE</span></header>
+    <section class="flow" aria-label="Integrationsfluss"><h2>Datenfluss · modellierte Verbindungen</h2><div id="flow"></div></section>
+    <section id="processDiagrams" aria-label="BPMN-Prozesse des Interfaces"></section>
+    <p id="linkStatus" role="status">Einfachklick: Details · Mouse-over: Gegenstück im Datenfluss/BPMN hervorheben.</p>
+    <section id="chapters" class="chapters" aria-label="Kapitelübersicht"></section>
+    <details class="overview-info"><summary>Info & Details · Quellen, Tests und offene Punkte</summary><section class="bottom"><div class="panel"><h2>Schnellzugriff</h2><div id="quicklinks"></div></div><div class="panel"><h2>Offene Punkte · erste fünf</h2><ul id="gaps"></ul></div></section></details>
+    <section class="selfref"><div id="qr" aria-label="QR-Code zum Interface-Cockpit"></div><div><h2>Selbstreferenz · Interface, kein gespeichertes ORCAI-Dokument</h2><p id="identity"></p><a id="permalink"></a><p id="hash" class="mono"></p><button id="copyLink" type="button">Cockpit-Link kopieren</button><p id="copyStatus" role="status"></p></div></section>
+    <footer>Modellierte Angaben sind kein Produktivnachweis. OFFEN bedeutet: in den verwendeten Quellen nicht dokumentiert. Kapitel-Ampeln zeigen nur die Vollständigkeit, keine technische oder fachliche Freigabe.</footer>
+  </main>
+  <dialog id="detail"><header><h2 id="detailTitle"></h2><button id="closeDetail" aria-label="Details schließen" type="button">×</button></header><div id="detailContent"></div></dialog>
+  <aside id="agentDrawer" aria-label="AI-Agent Drawer"><header><strong>ORCAI KI-Architekt · EA-Agent</strong><button id="closeAgent" aria-label="AI-Agent schließen" type="button">×</button></header><iframe id="agentFrame" title="ORCAI EA AI Agent" allow="clipboard-write"></iframe></aside>
+  <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.2.1/firebase-storage-compat.js"></script>
+  <script src="./firebase-config.js?v=20260811-4"></script>
+  <script src="./app-shell.js?v=20260904-html-view1"></script>
+  <script src="./app-launcher.js?v=20260922-05"></script>
+  <script src="./shell.js?v=20260923-03"></script>
+  <script src="./ea/integration-document-sources.js?v=20260922-01"></script>
+  <script src="./ea/integration-document-details.js?v=20260921-01"></script>
+  <script src="./ea/integration-document-guide.js?v=20260921-02"></script>
+  <script src="./vendor/qrcode.js?v=1.4.4"></script>
+  <script src="./ea/vendor/pdf-lib-1.17.1.min.js"></script>
+  <script src="./data-flow.js?v=20260923-02"></script>
+  <script src="./one-page-pdf.js?v=20260923-02"></script>
+  <script src="./vendor/bpmn-navigated-viewer-18.29.1.min.js"></script>
+  <script src="./diagram-linking.js?v=20260923-03"></script>
+  <script src="./process-diagrams.js?v=20260923-05"></script>
+  <script src="./cockpit-model.js?v=20260922-01"></script>
+  <script src="./document-versions.js?v=20260923-02"></script>
+  <script src="./guided-document.js?v=20260923-06"></script>
+  <script src="./document-editor.js?v=20260923-06"></script>
+  <script src="./compact-layout.js?v=20260923-01"></script>
+  <script src="./cockpit.js?v=20260923-05"></script>
+</body>
+</html>
+
+

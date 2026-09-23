@@ -1,0 +1,23 @@
+#processDiagrams{margin:18px 0}
+.if-bpmn-card{border:1px solid var(--border);border-radius:8px;margin:12px 0;overflow:hidden}
+.if-bpmn-card.if-requested-process{outline:3px solid #168bd2;scroll-margin-top:100px}
+.if-integration-link{text-decoration:none;cursor:pointer}
+.if-integration-link:hover,.if-integration-link:focus-visible{outline:2px solid #705500;outline-offset:2px}
+.if-bpmn-card>header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px;background:#075b9a;color:white}
+.if-bpmn-card h3{flex:1;margin:0;font-size:14px;min-width:180px}
+.if-bpmn-tools{display:flex;align-items:center;gap:6px}
+.if-bpmn-tools a{color:white;font-size:12px}
+.if-bpmn-card>p{padding:8px 12px;margin:0;font-size:12px}
+.if-bpmn-viewport{height:240px;min-height:180px;resize:vertical;overflow:hidden;background:#fff;color:#172b3a;position:relative}
+.if-bpmn-pill{display:inline-block;background:#ffdf5d;color:#241b00;border:1px solid #705500;border-radius:12px;padding:3px 8px;font:700 12px Arial,sans-serif;white-space:nowrap}
+.if-bpmn-reference{display:flex;gap:4px;white-space:nowrap}.if-connection-pill{background:#dbeafe;color:#123c68;border-color:#2563eb}
+.if-bpmn-viewport .if-current-integration .djs-visual>path{stroke:#b87900!important;stroke-width:3px!important;filter:drop-shadow(0 0 2px #ffdf5d)}
+.if-bpmn-viewport .if-current-integration .djs-visual>rect{fill:#fff0a3!important;stroke:#b87900!important}
+@media print{.if-bpmn-tools{display:none}.if-bpmn-card{break-inside:avoid}}
+#flow .if-linked-selection{outline:3px solid #db2777;outline-offset:2px;background:#fce7f3!important;color:#831843!important}
+.if-bpmn-viewport .if-linked-selection .djs-visual>rect{fill:#fce7f3!important;fill-opacity:.6!important;stroke:#db2777!important;stroke-width:3px!important}
+.if-bpmn-viewport .if-linked-selection .djs-visual>path{stroke:#db2777!important;stroke-width:5px!important;filter:drop-shadow(0 0 3px #f9a8d4)}
+#linkStatus{font-size:12px;color:var(--muted)}
+.if-system-pill{background:#dcfce7;color:#14532d;border-color:#15803d;cursor:pointer}
+.if-system-pill.if-system-selected{background:#fce7f3;color:#831843;border:2px solid #db2777}
+.if-role-pill{background:#e9e2ff;color:#493070;border-color:#7350ac;cursor:pointer;max-width:240px;overflow:hidden;text-overflow:ellipsis}.if-role-pill.if-system-selected{background:#fce7f3;border:2px solid #db2777;color:#831843}

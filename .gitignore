@@ -1,0 +1,13 @@
+# OS & IDE
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Local / Temp
+node_modules/
+*.log
+.system_generated/
+scratch/
+tmp/

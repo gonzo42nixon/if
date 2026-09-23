@@ -1,0 +1,7 @@
+body.if-agent-host #agentChatPane{min-width:0!important;max-width:100%;overflow:hidden}
+body.if-agent-host #agentPromptSuggestions{display:flex!important;flex-wrap:wrap!important;justify-content:flex-start!important;align-content:flex-start;width:100%!important;min-width:0!important;box-sizing:border-box;height:auto!important;max-height:35vh!important;overflow-x:hidden!important;overflow-y:auto!important;flex-shrink:0;transform:none!important}
+body.if-agent-host #agentPromptSuggestions .agent-prompt-chip{max-width:100%;min-width:0;white-space:normal!important;overflow-wrap:anywhere;flex:0 1 auto!important;box-sizing:border-box}
+body.if-agent-host #sidebarAgent .agent-drawer-header{background:transparent!important;background-image:none!important;color:inherit!important;box-shadow:none!important}
+body.if-agent-host #sidebarAgent .agent-chat-title-main,body.if-agent-host #sidebarAgent .agent-chat-title-sub{color:inherit!important;background:none!important;-webkit-text-fill-color:currentColor!important}
+body.if-agent-host #agentChatMessages{min-height:0;min-width:0;flex:1 1 auto}
+body.if-agent-host #ifGuidedDocument[hidden]{display:none!important}

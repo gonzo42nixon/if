@@ -1,0 +1,8 @@
+#agentDrawer{top:0!important;bottom:0!important;height:100dvh;width:min(var(--if-agent-width,720px),calc(100vw - 88px))!important}
+#agentFrame{min-height:0;flex:1;width:100%;border:0}
+body.agent-open orcai-app-shell .orcai-toolbar{left:8px!important;right:auto!important;width:calc(100vw - var(--if-drawer-actual,720px) - 16px);max-width:100%;flex-wrap:wrap;justify-content:flex-end;box-sizing:border-box}
+body.agent-open orcai-app-shell .orcai-actions{flex-wrap:wrap;max-width:100%;box-sizing:border-box;justify-content:center}
+body.agent-open:has(#agentDrawer[data-side=left]) orcai-app-shell .orcai-toolbar{left:auto!important;right:8px!important}
+.appbar .if-app-logo{--if-logo-left:20px;left:var(--if-logo-left);z-index:46}
+body.agent-open:has(#agentDrawer[data-side=left]) .appbar .if-app-logo{left:calc(var(--if-logo-left) + var(--if-drawer-actual,720px))}
+@media(max-width:600px){.appbar .if-app-logo{--if-logo-left:8px}}

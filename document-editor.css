@@ -1,0 +1,8 @@
+#documentVersion{margin-left:auto;max-width:410px;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px 10px;font-size:12px;text-align:right}
+#documentVersion>p{width:100%;margin:0;color:var(--red)}
+#documentVersion>p:empty{display:none}
+#documentVersion>small{width:100%;color:var(--muted)}
+#documentVersion button,#documentVersion select{font:inherit;padding:4px 7px}
+#documentVersion nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;align-items:center}
+#documentVersion strong{font-size:12px}
+@media print{#documentVersion button,#documentVersion select,#documentVersion small{display:none}}

@@ -1,0 +1,32 @@
+.orcai-apps-panel {
+  --apps-surface: var(--md-surface, #202b38);
+  --apps-ink: var(--md-on-surface, #edf5ff);
+  --apps-border: var(--border, #526572);
+  --apps-accent: var(--md-primary, #99d4ff);
+  --apps-hover: color-mix(in srgb, var(--apps-accent) 14%, transparent);
+  position: fixed; inset: auto; margin: 0; box-sizing: border-box;
+  width: min(338px, calc(100vw - 16px)); max-height: calc(100dvh - 16px); overflow: auto;
+  padding: 16px; border: 1px solid var(--apps-border); border-radius: 24px;
+  background: var(--apps-surface); color: var(--apps-ink); box-shadow: 0 12px 40px #0005;
+  z-index: 100; font: inherit;
+}
+.orcai-apps-panel[hidden] { display: none; }
+.orcai-apps-panel::backdrop { background: transparent; }
+.orcai-apps-panel header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-left: 8px; }
+.orcai-apps-close { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 24px; cursor: pointer; }
+.orcai-apps-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.orcai-apps-grid a { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 4px; border-radius: 16px; color: inherit; text-decoration: none; font-size: 13px; }
+.orcai-apps-grid a:hover, .orcai-apps-close:hover { background: var(--apps-hover); }
+.orcai-apps-grid a:focus-visible, .orcai-apps-close:focus-visible { outline: 2px solid var(--apps-accent); outline-offset: 2px; }
+#orcaiAppsButton:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.orcai-app-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 15px; color: white; }
+.orcai-app-icon svg { width: 32px; height: 32px; }
+/* EA uses body classes, while ORCAI/IF use the root data-theme attribute. */
+html[data-theme="light"] .orcai-apps-panel, body.theme-day .orcai-apps-panel {
+  --apps-surface: #ffffff; --apps-ink: #172b3a; --apps-border: #b6c4cf;
+  --apps-accent: #075b9a; --apps-hover: #e3eef5; color-scheme: light;
+}
+html[data-theme="dark"] .orcai-apps-panel, body.theme-night .orcai-apps-panel {
+  --apps-surface: #202b38; --apps-ink: #edf5ff; --apps-border: #526572;
+  --apps-accent: #99d4ff; --apps-hover: #34485d; color-scheme: dark;
+}
