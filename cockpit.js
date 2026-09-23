@@ -178,8 +178,9 @@
     $('print').disabled = true;
     try { await window.OrcaiIfPdf.download(source, hash); }
     catch (error) { $('loadStatus').textContent = 'PDF konnte nicht erzeugt werden: ' + error.message; }
-    finally { $('print').disabled = false; }
-  }; $('copyLink').onclick = async () => {
+  };
+  const copyBtn = $('copyLink');
+  if (copyBtn) copyBtn.onclick = async () => {
     try { await navigator.clipboard.writeText($('permalink').href); $('copyStatus').textContent = 'Cockpit-Link kopiert (lädt den Modellstand, nicht die lokale Übergabe).'; }
     catch (_) { $('copyStatus').textContent = 'Bitte den sichtbaren Link manuell kopieren.'; }
   };
