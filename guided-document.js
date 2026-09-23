@@ -124,33 +124,72 @@
       if(context.record&&context.record.entry.number!==context.record.head.ifDocument.versions.length){add('p','Bitte zuerst die aktuelle Version öffnen. Historische Versionen bleiben unverändert.');return;}
       const start=action('Vorschlag anfordern',suggest);start?.click();
     };
-    try{
-      const state=JSON.parse(sessionStorage.getItem('orcai-if-resume')||'null');
-      if(state&&context.record?.key===state.key&&context.record.client===state.client&&context.record.entry.number===state.version){
-        sessionStorage.removeItem('orcai-if-resume');
-        proposal=OrcaiIfDocumentEditor.proposals(JSON.stringify({proposals:[state.proposal]}),context.source)[0];
-        reviewNote=state.reviewNote||'';excluded=Array.isArray(state.excluded)?state.excluded:[];
-        const drawer=document.getElementById('agentDrawer');drawer.dataset.side=state.side==='left'?'left':'right';
-        if(/^(380|520|720|1200)px$/.test(state.width))drawer.style.setProperty('--if-agent-width',state.width);
-        if(state.open&&!drawer.classList.contains('open'))document.getElementById('agentToggle').click();
-        clear('Übernommen · Version '+state.version);markdown(proposal.value);plan();
-        if(reviewNote){const review=add('details','');const summary=doc.createElement('summary');summary.textContent='Zweitgutachten · Begründung (nicht Dokumentinhalt)';review.append(summary);markdown(reviewNote,review);}
-        action('Was soll ich als nächstes tun?',suggest);action('Abbruch oder Themawechsel',stop);
-        const sections=OrcaiDocumentGuide.sections(context.source),section=sections.find(s=>s.fields.some(f=>f.key===proposal.field));
-        const target=document.querySelectorAll('#chapters .card')[section.number-1];
-        document.getElementById('ifLatestChange')?.remove();
-        const change=document.createElement('aside');change.id='ifLatestChange';change.setAttribute('role','status');
-        change.style.cssText='padding:14px;border:2px solid #087da4;border-radius:12px;margin:10px 0;white-space:pre-wrap;overflow-wrap:anywhere';
-        change.textContent='Geändert in Version '+state.version+' · '+section.fields.find(f=>f.key===proposal.field).label;
-        markdown(proposal.value,change);
-        document.getElementById('chapters').after(change);
-        change.scrollIntoView({block:'center',behavior:'instant'});
-        for(const node of [target,change])if(node){
-          if(!matchMedia('(prefers-reduced-motion: reduce)').matches)node.animate([{boxShadow:'0 0 0 0 transparent'},{boxShadow:'0 0 0 6px #eebc35',offset:.5},{boxShadow:'0 0 0 0 transparent'}],{duration:900,iterations:3});
-          else node.style.outline='3px solid #eebc35';
-        }
+    function highlightChangedChapter(fieldName, versionNumber, valueText, customLabel) {
+      if (!fieldName) return;
+      const sections = OrcaiDocumentGuide.sections(context.source);
+      const section = sections.find(s => s.fields.some(f => f.key === fieldName));
+      if (!section) return;
+      const cards = document.querySelectorAll('#chapters .card');
+      const target = cards[section.number - 1];
+      if (target) {
+        cards.forEach(c => {
+          c.classList.remove('card-changed-active');
+          c.querySelector('.changed-card-badge')?.remove();
+        });
+        target.classList.add('card-changed-active');
+        const badge = document.createElement('div');
+        badge.className = 'changed-card-badge';
+        badge.textContent = `✨ Geändert in V${versionNumber}`;
+        target.prepend(badge);
+        setTimeout(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150);
       }
-    }catch(error){console.warn('[IF Wiederaufnahme]',error);}
+      document.getElementById('ifLatestChange')?.remove();
+      const change = document.createElement('aside');
+      change.id = 'ifLatestChange';
+      change.setAttribute('role', 'status');
+      change.style.cssText = 'padding:14px;border:2px solid #087da4;border-radius:12px;margin:12px 0;white-space:pre-wrap;overflow-wrap:anywhere;background:rgba(14,165,233,0.06);';
+      const label = customLabel || section.fields.find(f => f.key === fieldName)?.label || fieldName;
+      const head = document.createElement('strong');
+      head.textContent = `Geändert in Version ${versionNumber} · ${label}`;
+      change.append(head);
+      if (valueText) {
+        const valDiv = document.createElement('div');
+        valDiv.style.marginTop = '6px';
+        if (win?.OrcaiAgentReasoning?.renderMarkdown) valDiv.innerHTML = win.OrcaiAgentReasoning.renderMarkdown(valueText);
+        else valDiv.textContent = valueText;
+        change.append(valDiv);
+      }
+      document.getElementById('chapters')?.after(change);
+    }
+    let resumed = false;
+    try {
+      const state = JSON.parse(sessionStorage.getItem('orcai-if-resume') || 'null');
+      if (state && context.record?.key === state.key && context.record.client === state.client && context.record.entry.number === state.version) {
+        resumed = true;
+        sessionStorage.removeItem('orcai-if-resume');
+        proposal = OrcaiIfDocumentEditor.proposals(JSON.stringify({ proposals: [state.proposal] }), context.source)[0];
+        reviewNote = state.reviewNote || ''; excluded = Array.isArray(state.excluded) ? state.excluded : [];
+        const drawer = document.getElementById('agentDrawer'); drawer.dataset.side = state.side === 'left' ? 'left' : 'right';
+        if (/^(380|520|720|1200)px$/.test(state.width)) drawer.style.setProperty('--if-agent-width', state.width);
+        if (state.open && !drawer.classList.contains('open')) document.getElementById('agentToggle').click();
+        clear('Übernommen · Version ' + state.version); markdown(proposal.value); plan();
+        if (reviewNote) { const review = add('details', ''); const summary = doc.createElement('summary'); summary.textContent = 'Zweitgutachten · Begründung (nicht Dokumentinhalt)'; review.append(summary); markdown(reviewNote, review); }
+        action('Was soll ich als nächstes tun?', suggest); action('Abbruch oder Themawechsel', stop);
+        highlightChangedChapter(proposal.field, state.version, proposal.value);
+      }
+    } catch (error) { console.warn('[IF Wiederaufnahme]', error); }
+
+    if (!resumed && context.record?.entry) {
+      try {
+        const reason = context.record.entry.reason || '';
+        const allFieldKeys = OrcaiDocumentGuide.sections(context.source).flatMap(s => s.fields.map(f => f.key));
+        const foundField = allFieldKeys.find(k => new RegExp(`(?:^|[\\s:·,])` + k + `(?:[\\s:·,]|\$)`, 'i').test(reason));
+        if (foundField) {
+          const val = context.source.integration.documentation?.[foundField] ?? context.source.integration[foundField];
+          highlightChangedChapter(foundField, context.record.entry.number, typeof val === 'string' ? val : JSON.stringify(val));
+        }
+      } catch (err) { console.warn('[IF Version-Hervorhebung]', err); }
+    }
   }
   window.OrcaiIfGuided={mount,prepare,openFields};
 })();

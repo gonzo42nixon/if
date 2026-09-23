@@ -43,15 +43,26 @@
     const m=maturity(source),badge=el('strong',m.label+' · '+m.percent+' %',host);badge.style.color=m.color;
     badge.title='Dokumentationsabdeckung, keine fachliche Freigabe. KI-Entwürfe zählen nicht als belegte Angaben.';
     if(record){
-      const history=record.head.ifDocument.versions,index=record.entry.number-1;
-      el('span','Version '+record.entry.number+' · '+new Date(record.entry.date).toLocaleString('de-DE'),host);
-      const nav=el('nav',undefined,host);nav.setAttribute('aria-label','Versionshistorie');
-      const a=(label,v)=>{const n=el('a',label,nav);n.href=OrcaiIfVersions.url(source,record.client,record.key,v);};
-      if(index>0)a('← Vorgänger',index);
-      if(index<history.length-1){el('strong','Historische Fassung',host);a('Nachfolger →',index+2);a('Aktuelle Fassung',null);}
-      const select=el('select',undefined,nav);select.setAttribute('aria-label','Historische Version öffnen');
-      history.slice().reverse().forEach(v=>{const o=el('option','V'+v.number+' · '+new Date(v.date).toLocaleDateString('de-DE'),select);o.value=v.number;o.selected=v.number===record.entry.number;});
-      select.onchange=()=>location.assign(OrcaiIfVersions.url(source,record.client,record.key,select.value));
+      const history=record.head.ifDocument.versions;
+      const nav=el('nav',undefined,host);nav.setAttribute('aria-label','Versionsauswahl und Historie');
+      const select=el('select',undefined,nav);select.className='if-version-select';select.setAttribute('aria-label','Dokumentversion auswählen');
+      const pad=n=>String(n).padStart(2,'0');
+      const formatOpt=v=>{
+        const d=new Date(v.date);
+        const dateStr=`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        const isLatest=v.number===history.length;
+        return `V${v.number} · ${dateStr}${isLatest?' (aktuell)':''}`;
+      };
+      history.slice().reverse().forEach(v=>{
+        const opt=el('option',formatOpt(v),select);
+        opt.value=v.number;
+        opt.selected=v.number===record.entry.number;
+      });
+      select.onchange=()=>{
+        const targetVer=Number(select.value)===history.length?null:select.value;
+        location.assign(OrcaiIfVersions.url(source,record.client,record.key,targetVer));
+      };
+      button('Änderungshistorie',()=>showHistory(record,source));
       const share=OrcaiIfVersions.url(source,record.client,record.key);
       document.getElementById('permalink').href=share;document.getElementById('permalink').textContent=share;
       document.getElementById('identity').textContent='Dokument '+record.key+' · Version '+record.entry.number+' · Share-Link zeigt immer die aktuelle Fassung';
@@ -66,7 +77,6 @@
         const saved=await OrcaiIfVersions.save({source,diagrams:api.diagrams()},record,client,'Manuell gespeichert');
         location.assign(OrcaiIfVersions.url(source,saved.client,saved.key));
       });
-      const improve=button('AI · Verbesserung vorschlagen',()=>review(current));improve.id='ifImproveDocument';
       if(record)button('Angabe bearbeiten / prüfen',()=>edit(current));
     }
     const hint=el('small',m.percent<100?'Nächster Schritt: offene Angaben zu Zuständigkeit, Fehlerbehandlung und Tests konkretisieren.':'Nächster Schritt: Quellenstand und Nachweise fachlich prüfen lassen.',host);
@@ -74,36 +84,71 @@
     window.OrcaiIfCompact?.refresh();
     window.OrcaiIfGuided?.mount(current);
   }
-  async function review(context){
-    const {source,record,api}=context;
-    if(!record)throw new Error('Bitte die Dokumentation zuerst speichern. Vorschläge werden danach versioniert übernommen.');
-    const goal=prompt('Was soll der Agent verbessern? Nur Dokumentationsfelder werden geändert, keine EA-Systeme oder ausführbaren Mappings.','Offene Angaben priorisieren und konkrete nächste Schritte vorschlagen.');
-    if(!goal)return;
-    const response=await api.rpc('orcai-if-proposals',{goal,source});
-    const list=proposals(response.raw,source);
-    if(!list.length)throw new Error('Der Agent hat keine anwendbaren Änderungen vorgeschlagen.');
-    const dialog=el('dialog',undefined,document.body);el('h2','AI-Vorschläge prüfen und als neue Version übernehmen',dialog);
-    el('p','Kein Produktivnachweis. Ausgewählte Texte werden als ENTWURF gespeichert. Die bisherige Version bleibt erhalten.',dialog);
-    const choices=list.map(p=>{
-      const field=OrcaiDocumentGuide.sections(source).flatMap(s=>s.fields).find(f=>f.key===p.field);
-      const label=el('label',undefined,dialog),check=el('input',undefined,label);check.type='checkbox';
-      el('strong',field.label,label);el('p',p.reason,dialog);
-      el('pre','Bisher: '+JSON.stringify(source.integration.documentation?.[p.field]??source.integration[p.field]??'OFFEN'),dialog);
-      const value=el('textarea',undefined,dialog);value.value=p.value;value.rows=4;value.style.width='100%';value.setAttribute('aria-label','Vorschlag für '+field.label);
-      const preview=el('div',undefined,dialog);preview.setAttribute('aria-label','Markdown-Vorschau');
-      const render=()=>{const renderer=document.getElementById('agentFrame')?.contentWindow?.OrcaiAgentReasoning?.renderMarkdown;if(renderer)preview.innerHTML=renderer(value.value);else preview.textContent=value.value;};value.addEventListener('input',render);render();
-      return {p,check,value};
+  function showHistory(record,source){
+    if(!record?.head?.ifDocument?.versions)return;
+    const history=record.head.ifDocument.versions;
+    const dialog=el('dialog',undefined,document.body);
+    dialog.className='if-history-dialog';
+    const header=el('header',undefined,dialog);
+    const title=el('h2',`Änderungshistorie · ${source.integration.id}`,header);
+    title.style.margin='0';
+    const closeBtn=el('button','×',header);
+    closeBtn.type='button';
+    closeBtn.style.cssText='border:none;background:none;font-size:24px;cursor:pointer;line-height:1;padding:0 4px;color:inherit;';
+    closeBtn.onclick=()=>dialog.close();
+
+    const desc=el('p',`Gesamte Versionierung für dieses Interface-Dokument (${record.key}) im Mandanten "${record.client}".`,dialog);
+    desc.style.cssText='font-size:12px;color:var(--muted,#64748b);margin:4px 0 12px;';
+
+    const table=el('table',undefined,dialog);
+    table.className='if-history-table';
+    const thead=el('thead',undefined,table);
+    const headRow=el('tr',undefined,thead);
+    ['Version','Datum & Uhrzeit','Autor / ID','Änderungsgrund','Aktion'].forEach(h=>el('th',h,headRow));
+
+    const tbody=el('tbody',undefined,table);
+    const pad=n=>String(n).padStart(2,'0');
+    history.slice().reverse().forEach(v=>{
+      const row=el('tr',undefined,tbody);
+      const isCurrent=v.number===record.entry.number;
+      const isLatest=v.number===history.length;
+      if(isCurrent)row.className='active-row';
+
+      const tdVer=el('td',undefined,row);
+      tdVer.innerHTML=`<strong>V${v.number}</strong>${isLatest?' <span style="font-size:10px;background:#22c55e22;color:#16a34a;padding:1px 4px;border-radius:3px;">aktuell</span>':''}${isCurrent?' <span style="font-size:10px;background:#0ea5e922;color:#0284c7;padding:1px 4px;border-radius:3px;">angezeigt</span>':''}`;
+
+      const d=new Date(v.date);
+      const tdDate=el('td',`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,row);
+      tdDate.style.whiteSpace='nowrap';
+
+      const tdAuthor=el('td',(v.author?String(v.author).slice(0,10)+'…':'–'),row);
+      tdAuthor.style.fontFamily='monospace';
+      tdAuthor.style.fontSize='11px';
+
+      const tdReason=el('td',v.reason||'–',row);
+      tdReason.style.maxWidth='320px';
+
+      const tdAction=el('td',undefined,row);
+      if(isCurrent){
+        const span=el('span','(angezeigt)',tdAction);
+        span.style.cssText='font-size:11px;color:var(--muted,#64748b);font-style:italic;';
+      }else{
+        const link=el('a','Öffnen ↗',tdAction);
+        link.className='insp-action-btn';
+        link.style.cssText='padding:3px 8px;font-size:11px;text-decoration:none;display:inline-block;';
+        link.href=OrcaiIfVersions.url(source,record.client,record.key,isLatest?null:v.number);
+      }
     });
-    const message=el('p','',dialog);message.setAttribute('role','status');
-    const apply=el('button','Auswahl annehmen und neue Version speichern',dialog);
-    apply.onclick=async()=>{apply.disabled=true;try{
-      const selected=choices.filter(x=>x.check.checked);if(!selected.length)throw new Error('Bitte mindestens einen Vorschlag auswählen.');
-      const next=JSON.parse(JSON.stringify(source));next.integration.documentation={...next.integration.documentation};
-      selected.forEach(({p,value})=>{if(!value.value.trim())throw new Error('Leere Vorschläge können nicht übernommen werden.');next.integration.documentation[p.field]='ENTWURF · '+value.value.trim();});
-      const saved=await OrcaiIfVersions.save({source:next,diagrams:api.diagrams()},record,record.client,'Bestätigte AI-Vorschläge: '+selected.map(x=>x.p.field).join(', '));
-      location.assign(OrcaiIfVersions.url(next,saved.client,saved.key));
-    }catch(e){message.textContent=e.message;}finally{apply.disabled=false;}};
-    const cancel=el('button','Abbrechen',dialog);cancel.onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+
+    const footer=el('div',undefined,dialog);
+    footer.style.cssText='margin-top:14px;display:flex;justify-content:flex-end;';
+    const closeBottom=el('button','Schließen',footer);
+    closeBottom.type='button';
+    closeBottom.style.cssText='padding:6px 14px;border-radius:6px;cursor:pointer;';
+    closeBottom.onclick=()=>dialog.close();
+
+    dialog.addEventListener('close',()=>dialog.remove());
+    dialog.showModal();
   }
   function edit({source,record,api},fieldKey){
     if(!record){alert('Bitte die Dokumentation zuerst speichern, bevor Angaben versioniert bearbeitet werden.');return;}

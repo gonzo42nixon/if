@@ -3,6 +3,14 @@
 #documentVersion>p:empty{display:none}
 #documentVersion>small{width:100%;color:var(--muted)}
 #documentVersion button,#documentVersion select{font:inherit;padding:4px 7px}
-#documentVersion nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;align-items:center}
+#documentVersion nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;align-items:center}
 #documentVersion strong{font-size:12px}
+.if-version-select{font:inherit;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;border:1px solid var(--border,#cbd5e1);background:var(--card-bg,#fff);color:inherit;cursor:pointer;max-width:270px}
+.if-history-dialog{border:1px solid var(--border,#cbd5e1);border-radius:12px;padding:20px;max-width:850px;width:92vw;box-shadow:0 12px 36px rgba(0,0,0,0.3);background:var(--bg,#fff);color:inherit}
+.if-history-dialog::backdrop{background:rgba(0,0,0,0.5);backdrop-filter:blur(2px)}
+.if-history-dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.if-history-table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0}
+.if-history-table th,.if-history-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border,#e2e8f0)}
+.if-history-table th{font-weight:700;background:var(--item-bg,rgba(0,0,0,0.03))}
+.if-history-table tr.active-row{background:rgba(14,165,233,0.12);font-weight:600}
 @media print{#documentVersion button,#documentVersion select,#documentVersion small{display:none}}

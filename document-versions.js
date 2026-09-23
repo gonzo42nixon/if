@@ -7,7 +7,10 @@
   function client(value){if(!/^[A-Z0-9]{2,16}$/.test(value||''))throw new Error('Bitte gültige Client-ID auswählen (2–16 Großbuchstaben/Ziffern).');return value;}
   function ref(c,k){client(c);if(!valid.test(k))throw new Error('Ungültiger Dokument-Schlüssel.');return firebase.firestore().doc(`clients/${c}/envelopes/${k}`);}
   async function user(){const auth=firebase.auth();if(!auth.currentUser)await new Promise(resolve=>{const off=auth.onAuthStateChanged(()=>{off();resolve();});});if(!auth.currentUser)throw new Error('Bitte oben rechts anmelden und den Dokumentlink erneut öffnen.');return auth.currentUser;}
-  function url(source,c,k,v){const u=new URL(OrcaiIfModel.canonicalUrl(source.model.id,source.integration.id,location.origin));u.searchParams.set('client',c);u.searchParams.set('doc',k);if(v)u.searchParams.set('version',v);return u.href;}
+  function url(source,c,k,v){
+    const base=window.OrcaiIfModel?.canonicalUrl?window.OrcaiIfModel.canonicalUrl(source.model.id,source.integration.id,location.origin):`${location.origin}/if/?model=${encodeURIComponent(source.model.id)}&int=${encodeURIComponent(source.integration.id)}`;
+    const u=new URL(base);u.searchParams.set('client',c);u.searchParams.set('doc',k);if(v)u.searchParams.set('version',v);return u.href;
+  }
   async function read(c,k,version){
     const u=await user(),snap=await ref(c,k).get({source:'server'});
     if(!snap.exists)throw new Error('Gespeicherte Dokumentation nicht gefunden.');

@@ -158,7 +158,9 @@
     if (data?.type === 'orcai-if-ready') { ready = true; if (selected.id) loadSource(); else $('loadStatus').textContent = 'Bitte eine Interface-ID eingeben, z. B. JSD-INT-03.'; }
     if (data?.type === 'orcai-if-close-agent') setAgent(false);
     if(data?.type==='orcai-if-improve-document'){
-      const action=$('ifImproveDocument');if(action)action.click();else $('loadStatus').textContent='Zum Bearbeiten bitte die aktuelle gespeicherte Dokumentversion öffnen.';
+      setAgent(true);
+      const question = frame?.contentWindow?.document?.getElementById('ifNextStepQuestion');
+      if(question) question.click();
     }
     if (['orcai-if-source-result', 'orcai-if-test-result','orcai-if-proposals-result'].includes(data?.type)) {
       const pending = requests.get(data.requestId); if (!pending) return;

@@ -3,7 +3,7 @@
 .doc-head>.badge{grid-column:1;justify-self:start;align-self:start;padding:3px 8px;font-size:10px}
 .document-links{grid-column:2;grid-row:1 / span 2;display:flex;gap:6px;align-items:center}
 .document-links #qr{flex:none}.document-links #qr svg{display:block;width:76px;height:76px;background:white}
-.document-links #copyLink{display:flex;align-items:center;padding:6px}
+.document-links #copyLink{display:none!important}
 .document-links #copyStatus{position:absolute;right:20px;background:var(--bg);font-size:11px;max-width:260px}
 .document-links #copyStatus:empty{display:none}
 .document-metadata{grid-column:1;grid-row:3;font-size:11px;min-width:0;color:var(--muted)}
@@ -23,3 +23,30 @@
 @media(max-width:650px){.doc-head h1{font-size:17px}.document-links #qr svg{width:64px;height:64px}.doc-head #documentVersion{justify-content:flex-start}.if-bpmn-card>header{flex-wrap:wrap;border-radius:12px}.if-bpmn-card h3{flex-basis:75%}.if-bpmn-viewport{border-top-width:75px}.if-bpmn-tools{margin-left:auto}.document-metadata{grid-column:1 / -1}}
 @media(max-width:650px){.if-bpmn-card{padding-top:75px}.if-bpmn-viewport{border:0}}
 @media print{.doc-head #documentVersion{grid-row:auto}.document-links #copyLink{display:none}.if-bpmn-viewport{height:300px}.if-bpmn-card>header,.flow>h2{backdrop-filter:none}.document-metadata:not([open]){display:none}}
+
+@keyframes ifCardHighlightPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(238, 188, 53, 0); }
+  25% { box-shadow: 0 0 0 6px rgba(238, 188, 53, 0.8), 0 0 20px rgba(238, 188, 53, 0.5); border-left-color: #eebc35 !important; }
+  60% { box-shadow: 0 0 0 8px rgba(14, 165, 233, 0.85), 0 0 25px rgba(14, 165, 233, 0.6); border-left-color: #0ea5e9 !important; }
+}
+
+.card.card-changed-active {
+  animation: ifCardHighlightPulse 1.6s ease-in-out 4 !important;
+  border-left: 6px solid #eebc35 !important;
+  outline: 2px solid #0ea5e9;
+  background: rgba(14, 165, 233, 0.08) !important;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.changed-card-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #eebc35, #f59e0b);
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
