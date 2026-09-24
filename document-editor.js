@@ -84,27 +84,153 @@
     window.OrcaiIfCompact?.refresh();
     window.OrcaiIfGuided?.mount(current);
   }
+
+  let zIndex = 15000;
+  function raise(node) {
+    node.style.setProperty('z-index', String(++zIndex), 'important');
+  }
+  function clamp(node) {
+    const r = node.getBoundingClientRect();
+    node.style.left = Math.max(8, Math.min(r.left, window.innerWidth - Math.min(r.width, window.innerWidth - 16) - 8)) + 'px';
+    node.style.top = Math.max(8, Math.min(r.top, window.innerHeight - 60)) + 'px';
+  }
+  function makeDraggable(node, handle) {
+    if (node.dataset.floatBound) return;
+    node.dataset.floatBound = 'true';
+    handle.classList.add('workspace-handle');
+    handle.addEventListener('mousedown', e => {
+      if (!e.target.closest('button,a,input,select,textarea')) e.stopImmediatePropagation();
+    }, true);
+    handle.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || e.target.closest('button,a,input,select,textarea')) return;
+      e.preventDefault(); e.stopPropagation();
+      const r = node.getBoundingClientRect(), x = e.clientX, y = e.clientY;
+      raise(node);
+      handle.setPointerCapture(e.pointerId);
+      const move = evt => {
+        node.style.left = (r.left + evt.clientX - x) + 'px';
+        node.style.top = (r.top + evt.clientY - y) + 'px';
+        clamp(node);
+      };
+      const end = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', end);
+        handle.removeEventListener('pointercancel', end);
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    });
+    node.addEventListener('pointerdown', () => raise(node), true);
+  }
+
+  const KNOWN_AUTHORS = {
+    'Ge6RiR1RWFbUyVT2sF6aEOGNLDC3': 'drueffler@gmail.com',
+    'migration': 'Migration'
+  };
+  function formatAuthor(uid) {
+    if (!uid) return '–';
+    if (KNOWN_AUTHORS[uid]) return KNOWN_AUTHORS[uid];
+    const cur = window.firebase?.auth?.().currentUser;
+    if (cur && cur.uid === uid && cur.email) return cur.email;
+    if (String(uid).includes('@')) return uid;
+    return String(uid).length > 14 ? String(uid).slice(0, 10) + '…' : String(uid);
+  }
+
+  function escapeHtml(text) {
+    return String(text || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+  }
+  function renderMarkdown(text) {
+    if (!text) return '';
+    const frame = document.getElementById('agentFrame');
+    const win = frame?.contentWindow;
+    if (win?.OrcaiAgentReasoning?.renderMarkdown) {
+      try { return win.OrcaiAgentReasoning.renderMarkdown(text); } catch (_) {}
+    }
+    const safe = escapeHtml(text).replace(/\r/g, '');
+    const inline = value => value
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>');
+    const cells = line => line.trim().replace(/^\||\|$/g, '').split('|').map(cell => inline(cell.trim()));
+    const lines = safe.split('\n');
+    let html = '', listOpen = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1])) {
+        if (listOpen) { html += '</ul>'; listOpen = false; }
+        html += '<div style="overflow-x:auto;margin:8px 0;"><table class="if-history-table"><thead><tr>' +
+          cells(line).map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+        i += 2;
+        while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+          html += '<tr>' + cells(lines[i]).map(c => '<td>' + c + '</td>').join('') + '</tr>';
+          i++;
+        }
+        html += '</tbody></table></div>';
+        i--;
+        continue;
+      }
+      const heading = line.match(/^\s*(#{1,4})\s+(.+)/);
+      const list = line.match(/^\s*(?:[-*]|\d+\.)\s+(.+)/);
+      if (list) {
+        if (!listOpen) { html += '<ul style="margin:6px 0;padding-left:20px;">'; listOpen = true; }
+        html += '<li style="margin:3px 0;">' + inline(list[1]) + '</li>';
+      } else {
+        if (listOpen) { html += '</ul>'; listOpen = false; }
+        if (heading) html += '<h' + heading[1].length + ' style="margin:12px 0 6px;font-size:' + (18 - heading[1].length * 2) + 'px;">' + inline(heading[2]) + '</h' + heading[1].length + '>';
+        else if (line.trim()) html += '<p style="margin:6px 0;line-height:1.5;">' + inline(line.trim()) + '</p>';
+      }
+    }
+    return html + (listOpen ? '</ul>' : '');
+  }
+
   function showHistory(record,source){
     if(!record?.head?.ifDocument?.versions)return;
     const history=record.head.ifDocument.versions;
-    const dialog=el('dialog',undefined,document.body);
-    dialog.className='if-history-dialog';
-    const header=el('header',undefined,dialog);
-    const title=el('h2',`Änderungshistorie · ${source.integration.id}`,header);
+    const existing=document.getElementById('ifHistoryPopout');
+    if(existing){
+      raise(existing);
+      return;
+    }
+    const popout=el('section',undefined,document.body);
+    popout.id='ifHistoryPopout';
+    popout.className='workspace-window workspace-floating if-history-popout';
+    popout.setAttribute('role','region');
+    popout.setAttribute('aria-label',`Änderungshistorie · ${source.integration.id}`);
+
+    const width=Math.min(920,window.innerWidth-32);
+    const left=Math.max(16,Math.round((window.innerWidth-width)/2));
+    popout.style.cssText=`left:${left}px;top:90px;width:${width}px;height:520px;min-width:440px;min-height:280px;`;
+
+    const bar=el('div',undefined,popout);
+    bar.className='workspace-window-bar';
+    const title=el('h2',`Änderungshistorie · ${source.integration.id}`,bar);
     title.style.margin='0';
-    const closeBtn=el('button','×',header);
+
+    const closeBtn=el('button','×',bar);
     closeBtn.type='button';
-    closeBtn.style.cssText='border:none;background:none;font-size:24px;cursor:pointer;line-height:1;padding:0 4px;color:inherit;';
-    closeBtn.onclick=()=>dialog.close();
+    closeBtn.className='workspace-close-btn';
+    closeBtn.title='Schließen';
+    closeBtn.setAttribute('aria-label','Schließen');
+    closeBtn.onclick=()=>popout.remove();
 
-    const desc=el('p',`Gesamte Versionierung für dieses Interface-Dokument (${record.key}) im Mandanten "${record.client}".`,dialog);
-    desc.style.cssText='font-size:12px;color:var(--muted,#64748b);margin:4px 0 12px;';
+    const body=el('div',undefined,popout);
+    body.className='workspace-window-content';
 
-    const table=el('table',undefined,dialog);
+    makeDraggable(popout,bar);
+    raise(popout);
+    clamp(popout);
+
+    const desc=el('p',`Gesamte Versionierung für dieses Interface-Dokument (${record.key}) im Mandanten "${record.client}".`,body);
+    desc.style.cssText='font-size:12px;color:var(--muted,#64748b);margin:0 0 10px;';
+
+    const tableWrap=el('div',undefined,body);
+    tableWrap.style.cssText='overflow:auto;max-height:calc(100% - 32px);';
+    const table=el('table',undefined,tableWrap);
     table.className='if-history-table';
     const thead=el('thead',undefined,table);
     const headRow=el('tr',undefined,thead);
-    ['Version','Datum & Uhrzeit','Autor / ID','Änderungsgrund','Aktion'].forEach(h=>el('th',h,headRow));
+    ['Version','Datum & Uhrzeit','Autor','Änderungsgrund','Aktionen'].forEach(h=>el('th',h,headRow));
 
     const tbody=el('tbody',undefined,table);
     const pad=n=>String(n).padStart(2,'0');
@@ -121,35 +247,205 @@
       const tdDate=el('td',`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,row);
       tdDate.style.whiteSpace='nowrap';
 
-      const tdAuthor=el('td',(v.author?String(v.author).slice(0,10)+'…':'–'),row);
-      tdAuthor.style.fontFamily='monospace';
+      const authorText=formatAuthor(v.author);
+      const tdAuthor=el('td',authorText,row);
+      if(v.author)tdAuthor.title=`UID: ${v.author}`;
       tdAuthor.style.fontSize='11px';
 
       const tdReason=el('td',v.reason||'–',row);
-      tdReason.style.maxWidth='320px';
+      tdReason.style.maxWidth='280px';
 
       const tdAction=el('td',undefined,row);
+      tdAction.style.whiteSpace='nowrap';
+      tdAction.style.display='flex';
+      tdAction.style.gap='6px';
+      tdAction.style.alignItems='center';
+
+      const detailBtn=el('button','Änderungsinfo ↗',tdAction);
+      detailBtn.type='button';
+      detailBtn.className='if-action-btn';
+      detailBtn.title=`Änderungsinfo zu Version ${v.number} als Pop-Out öffnen`;
+      detailBtn.onclick=()=>openChangeDetail(v,record,source);
+
       if(isCurrent){
         const span=el('span','(angezeigt)',tdAction);
         span.style.cssText='font-size:11px;color:var(--muted,#64748b);font-style:italic;';
       }else{
         const link=el('a','Öffnen ↗',tdAction);
-        link.className='insp-action-btn';
-        link.style.cssText='padding:3px 8px;font-size:11px;text-decoration:none;display:inline-block;';
+        link.className='if-action-btn';
         link.href=OrcaiIfVersions.url(source,record.client,record.key,isLatest?null:v.number);
       }
     });
-
-    const footer=el('div',undefined,dialog);
-    footer.style.cssText='margin-top:14px;display:flex;justify-content:flex-end;';
-    const closeBottom=el('button','Schließen',footer);
-    closeBottom.type='button';
-    closeBottom.style.cssText='padding:6px 14px;border-radius:6px;cursor:pointer;';
-    closeBottom.onclick=()=>dialog.close();
-
-    dialog.addEventListener('close',()=>dialog.remove());
-    dialog.showModal();
   }
+
+  async function openChangeDetail(v,record,source){
+    if(!v)return;
+    const vNum=v.number;
+    const existing=document.getElementById('ifChangeDetailPopout_'+vNum);
+    if(existing){
+      raise(existing);
+      return;
+    }
+    const popout=el('section',undefined,document.body);
+    popout.id='ifChangeDetailPopout_'+vNum;
+    popout.className='workspace-window workspace-floating if-change-popout';
+    popout.setAttribute('role','region');
+    popout.setAttribute('aria-label',`Änderungsinfo Version ${vNum}`);
+
+    const offset=((vNum*28)%140);
+    const width=Math.min(720,window.innerWidth-32);
+    const left=Math.max(16,Math.min(window.innerWidth-width-16,Math.round((window.innerWidth-width)/2+offset-40)));
+    popout.style.cssText=`left:${left}px;top:${110+offset}px;width:${width}px;height:520px;min-width:380px;min-height:260px;`;
+
+    const bar=el('div',undefined,popout);
+    bar.className='workspace-window-bar';
+    const titleWrap=el('div',undefined,bar);
+    titleWrap.style.cssText='display:flex;align-items:center;gap:8px;overflow:hidden;';
+    const title=el('h2',`Änderungsinfo · V${vNum}`,titleWrap);
+    title.style.margin='0';
+
+    const closeBtn=el('button','×',bar);
+    closeBtn.type='button';
+    closeBtn.className='workspace-close-btn';
+    closeBtn.title='Schließen';
+    closeBtn.setAttribute('aria-label','Schließen');
+    closeBtn.onclick=()=>popout.remove();
+
+    const body=el('div',undefined,popout);
+    body.className='workspace-window-content';
+
+    makeDraggable(popout,bar);
+    raise(popout);
+    clamp(popout);
+
+    const meta=el('div',undefined,body);
+    meta.className='if-change-meta';
+    const isCurrent=vNum===record?.entry?.number;
+    const isLatest=vNum===record?.head?.ifDocument?.versions?.length;
+    const badge=el('span',`V${vNum}${isLatest?' (aktuell)':''}${isCurrent?' (angezeigt)':''}`,meta);
+    badge.className=`if-change-badge ${isCurrent?'current':isLatest?'latest':''}`;
+
+    const pad=n=>String(n).padStart(2,'0');
+    if(v.date){
+      const d=new Date(v.date);
+      el('span',`📅 ${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,meta);
+    }
+    const authorText=formatAuthor(v.author);
+    const authorEl=el('span',`👤 ${authorText}`,meta);
+    if(v.author)authorEl.title=`UID: ${v.author}`;
+
+    if(v.reason){
+      const reasonEl=el('div',undefined,meta);
+      reasonEl.style.cssText='width:100%;margin-top:2px;font-style:italic;';
+      reasonEl.textContent=`Grund: ${v.reason}`;
+    }
+
+    const contentArea=el('div',undefined,body);
+
+    function renderFieldBlock(fLabel,textVal){
+      const block=el('div',undefined,contentArea);
+      block.className='if-change-block';
+      block.style.marginBottom='16px';
+
+      const hRow=el('div',undefined,block);
+      hRow.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;';
+      const h3=el('h3',fLabel,hRow);
+      h3.style.cssText='margin:0;font-size:14px;color:var(--blue,#0284c7);';
+
+      const copyBtn=el('button','Kopieren',hRow);
+      copyBtn.type='button';
+      copyBtn.className='if-action-btn';
+      copyBtn.onclick=async()=>{
+        try{
+          await navigator.clipboard.writeText(textVal||'');
+          copyBtn.textContent='Kopiert!';
+          setTimeout(()=>{copyBtn.textContent='Kopieren';},2000);
+        }catch(_){}
+      };
+
+      const bodyDiv=el('div',undefined,block);
+      bodyDiv.className='if-change-body';
+      bodyDiv.innerHTML=renderMarkdown(textVal||'–');
+    }
+
+    if(v.text&&v.field){
+      title.textContent=`Änderungsinfo · V${vNum} · ${v.label||v.field}`;
+      renderFieldBlock(v.label||v.field,v.text);
+      return;
+    }
+
+    contentArea.textContent='Lade Daten für Version '+vNum+' …';
+
+    try{
+      let targetSource=source;
+      let prevSource=null;
+
+      if(vNum===record?.entry?.number){
+        targetSource=source;
+      }else{
+        const res=await OrcaiIfVersions.read(record.client,record.key,vNum);
+        targetSource=res.payload.source;
+      }
+
+      const sections=OrcaiDocumentGuide.sections(targetSource);
+      const allFields=sections.flatMap(s=>s.fields);
+      const reason=v.reason||'';
+
+      let matchedField=allFields.find(f=>new RegExp(`(?:^|[\\s:·,])${f.key}(?:[\\s:·,]|$)`,'i').test(reason));
+      if(!matchedField){
+        matchedField=allFields.find(f=>reason.toLowerCase().includes(f.label.toLowerCase()));
+      }
+
+      contentArea.replaceChildren();
+
+      if(matchedField){
+        title.textContent=`Änderungsinfo · V${vNum} · ${matchedField.label}`;
+        const val=targetSource.integration.documentation?.[matchedField.key]??targetSource.integration[matchedField.key];
+        renderFieldBlock(matchedField.label,typeof val==='string'?val:JSON.stringify(val,null,2));
+      }else{
+        if(vNum>1){
+          try{
+            const prevRes=await OrcaiIfVersions.read(record.client,record.key,vNum-1);
+            prevSource=prevRes.payload.source;
+          }catch(_){}
+        }
+
+        const currDoc=targetSource.integration.documentation||{};
+        const prevDoc=prevSource?.integration?.documentation||{};
+        const changedKeys=Object.keys(currDoc).filter(k=>JSON.stringify(currDoc[k])!==JSON.stringify(prevDoc[k]));
+
+        if(changedKeys.length){
+          title.textContent=`Änderungsinfo · V${vNum} · ${changedKeys.length} Feld(er) geändert`;
+          changedKeys.forEach(k=>{
+            const f=allFields.find(field=>field.key===k);
+            const val=currDoc[k];
+            renderFieldBlock(f?.label||k,typeof val==='string'?val:JSON.stringify(val,null,2));
+          });
+        }else{
+          title.textContent=`Änderungsinfo · V${vNum}`;
+          const note=el('p','Keine isolierten Textänderungen gegenüber Vorversion erkannt. Dokumentstand dieser Version:',contentArea);
+          note.style.cssText='font-size:12px;color:var(--muted);';
+          const pre=el('pre',JSON.stringify(currDoc,null,2),contentArea);
+          pre.style.cssText='background:var(--surface-hover,rgba(0,0,0,0.04));padding:10px;border-radius:6px;overflow:auto;max-height:300px;font-size:11px;';
+        }
+      }
+
+      if(!isCurrent){
+        const switchWrap=el('div',undefined,contentArea);
+        switchWrap.style.cssText='margin-top:16px;padding-top:12px;border-top:1px solid var(--border,#cbd5e1);display:flex;justify-content:flex-end;';
+        const switchLink=el('a',`Version V${vNum} im Cockpit anzeigen ↗`,switchWrap);
+        switchLink.className='if-action-btn if-action-btn-primary';
+        switchLink.href=OrcaiIfVersions.url(source,record.client,record.key,isLatest?null:vNum);
+      }
+    }catch(err){
+      contentArea.replaceChildren();
+      const errBox=el('p',`Fehler beim Laden von Version ${vNum}: ${err.message}`,contentArea);
+      errBox.style.color='var(--red,#b42318)';
+    }
+  }
+
+  window.addEventListener('resize',()=>document.querySelectorAll('.workspace-floating').forEach(clamp));
+
   function edit({source,record,api},fieldKey){
     if(!record){alert('Bitte die Dokumentation zuerst speichern, bevor Angaben versioniert bearbeitet werden.');return;}
     if(record.entry.number!==record.head.ifDocument.versions.length){alert('Bitte die aktuelle Version zum Bearbeiten öffnen.');return;}
@@ -171,7 +467,15 @@
     }catch(e){status.textContent=e.message;}finally{save.disabled=false;}};
     const cancel=el('button','Abbrechen',dialog);cancel.onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
   }
-  window.OrcaiIfDocumentEditor={mount,proposals,maturity,editField:key=>current&&edit(current,key),reference:()=>current?.record?{url:OrcaiIfVersions.url(current.source,current.record.client,current.record.key),version:current.record.entry.number,date:current.record.entry.date}:null};
+  window.OrcaiIfDocumentEditor={
+    mount,
+    proposals,
+    maturity,
+    showHistory:(rec,src)=>showHistory(rec||current?.record,src||current?.source),
+    openChangeDetail:(v,rec,src)=>openChangeDetail(v,rec||current?.record,src||current?.source),
+    editField:key=>current&&edit(current,key),
+    reference:()=>current?.record?{url:OrcaiIfVersions.url(current.source,current.record.client,current.record.key),version:current.record.entry.number,date:current.record.entry.date}:null
+  };
   window.document?.addEventListener('orcai:share-request',event=>{
     const reference=window.OrcaiIfDocumentEditor.reference();if(!reference)return;event.preventDefault();
     const action=navigator.share?navigator.share({title:document.title,url:reference.url}):navigator.clipboard.writeText(reference.url);

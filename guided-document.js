@@ -149,9 +149,28 @@
       change.setAttribute('role', 'status');
       change.style.cssText = 'padding:14px;border:2px solid #087da4;border-radius:12px;margin:12px 0;white-space:pre-wrap;overflow-wrap:anywhere;background:rgba(14,165,233,0.06);';
       const label = customLabel || section.fields.find(f => f.key === fieldName)?.label || fieldName;
+      const headWrap = document.createElement('div');
+      headWrap.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;';
       const head = document.createElement('strong');
       head.textContent = `Geändert in Version ${versionNumber} · ${label}`;
-      change.append(head);
+      const popoutBtn = document.createElement('button');
+      popoutBtn.type = 'button';
+      popoutBtn.className = 'if-action-btn';
+      popoutBtn.title = 'Als verschiebbares Pop-Out-Fenster öffnen';
+      popoutBtn.innerHTML = '<span style="font-size:12px">⧉</span> Als Pop-Out';
+      popoutBtn.onclick = () => {
+        window.OrcaiIfDocumentEditor?.openChangeDetail({
+          number: versionNumber,
+          field: fieldName,
+          label,
+          text: valueText,
+          date: context.record?.entry?.date,
+          author: context.record?.entry?.author,
+          reason: context.record?.entry?.reason
+        }, context.record, context.source);
+      };
+      headWrap.append(head, popoutBtn);
+      change.append(headWrap);
       if (valueText) {
         const valDiv = document.createElement('div');
         valDiv.style.marginTop = '6px';
