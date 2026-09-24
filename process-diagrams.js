@@ -74,12 +74,42 @@
         if(warnings?.length)status.textContent+=' Hinweis: '+warnings.length+' BPMN-Importwarnung(en).';
         const missing=matches.filter(e=>!diagram.flowReferences?.find(r=>r.id===e.id)?.connectionId).length;
         if(missing)status.textContent+=' '+missing+' davon ohne Connection-Zuordnung.';
-        const button=(label,title,action)=>{const b=el('button',label,tools);b.type='button';b.title=title;b.setAttribute('aria-label',title);b.onclick=action;};
+        const button=(label,title,action)=>{const b=el('button',label,tools);b.type='button';b.title=title;b.setAttribute('aria-label',title);b.onclick=action;return b;};
         let autoFit=true;
         const fit=()=>{canvas.resized();canvas.zoom('fit-viewport','auto');};
         button('−','Diagramm verkleinern',()=>{autoFit=false;canvas.zoom(Math.max(.1,canvas.zoom()/1.25));});
         button('+','Diagramm vergrößern',()=>{autoFit=false;canvas.zoom(Math.min(4,canvas.zoom()*1.25));});
-        button('Einpassen','Gesamtes BPMN-Diagramm anzeigen',()=>{autoFit=true;fit();});
+        const fitBtn=button('','Fit to window',()=>{autoFit=true;fit();});
+        fitBtn.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="12" y1="3" x2="12" y2="8.5"/><polyline points="9.5,6.5 12,9 14.5,6.5"/><line x1="12" y1="21" x2="12" y2="15.5"/><polyline points="9.5,17.5 12,15 14.5,17.5"/><line x1="3" y1="12" x2="8.5" y2="12"/><polyline points="6.5,9.5 9,12 6.5,14.5"/><line x1="21" y1="12" x2="15.5" y2="12"/><polyline points="17.5,9.5 15,12 17.5,14.5"/></svg>';
+        const enterFsSvg='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9V5a2 2 0 0 1 2-2h4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/><path d="M21 15v4a2 2 0 0 1-2 2h-4"/><path d="M9 21H5a2 2 0 0 1-2-2v-4"/></svg>';
+        const exitFsSvg='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v4a2 2 0 0 1-2 2H3"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/><path d="M9 21v-4a2 2 0 0 0-2-2H3"/><path d="M15 21v-4a2 2 0 0 1 2-2h4"/></svg>';
+        const fsBtn=button('','Fullscreen',async()=>{
+          try{
+            const isFs=(document.fullscreenElement||document.webkitFullscreenElement)===card;
+            if(isFs){
+              if(document.exitFullscreen)await document.exitFullscreen();
+              else if(document.webkitExitFullscreen)await document.webkitExitFullscreen();
+            }else{
+              if(card.requestFullscreen)await card.requestFullscreen();
+              else if(card.webkitRequestFullscreen)await card.webkitRequestFullscreen();
+            }
+          }catch(e){console.warn('[BPMN Fullscreen]',e);}
+        });
+        fsBtn.innerHTML=enterFsSvg;
+        const onFsChange=()=>{
+          const isFs=(document.fullscreenElement||document.webkitFullscreenElement)===card;
+          fsBtn.innerHTML=isFs?exitFsSvg:enterFsSvg;
+          fsBtn.title=isFs?'Fullscreen beenden':'Fullscreen';
+          fsBtn.setAttribute('aria-label',fsBtn.title);
+          card.classList.toggle('if-fullscreen-active',isFs);
+          setTimeout(()=>{autoFit=true;fit();},80);
+        };
+        document.addEventListener('fullscreenchange',onFsChange);
+        document.addEventListener('webkitfullscreenchange',onFsChange);
+        cleanups.push(()=>{
+          document.removeEventListener('fullscreenchange',onFsChange);
+          document.removeEventListener('webkitfullscreenchange',onFsChange);
+        });
         const ea=el('a','',tools),url=new URL('/ea/',location.origin);
         const icon=el('img',undefined,ea);icon.src='../ea/ea-icon.svg';icon.alt='EA';icon.width=30;icon.height=30;
         ea.title='Dieses BPMN-Prozessmodell in EA im Vollbild öffnen';ea.setAttribute('aria-label',ea.title);

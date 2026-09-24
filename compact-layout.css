@@ -15,7 +15,7 @@
 #processDiagrams{margin:10px 0}#processDiagrams>h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .if-bpmn-card{position:relative;margin:8px 0}.if-bpmn-card>header{position:absolute;z-index:5;top:6px;left:6px;right:6px;border-radius:20px;padding:4px 9px;gap:6px;background:rgba(7,91,154,.82);backdrop-filter:blur(5px);flex-wrap:nowrap}
 .if-bpmn-card h3{font-size:12px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.if-bpmn-tools{flex-shrink:0}.if-bpmn-tools button{padding:3px 7px;font-size:11px}.if-bpmn-tools a{font-size:11px}
+.if-bpmn-tools{flex-shrink:0}.if-bpmn-tools button{display:inline-flex;align-items:center;justify-content:center;padding:3px 6px;font-size:11px}.if-bpmn-tools a{display:inline-flex;align-items:center;font-size:11px}
 .if-bpmn-card>p{position:absolute;bottom:4px;left:8px;z-index:4;max-width:75%;font-size:10px;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.85);pointer-events:none}
 .if-bpmn-card{padding-top:40px;padding-bottom:20px}
 .if-bpmn-viewport{height:clamp(310px,44vh,480px);min-height:260px;border:0}

@@ -6,8 +6,23 @@
 .if-bpmn-card>header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px;background:#075b9a;color:white}
 .if-bpmn-card h3{flex:1;margin:0;font-size:14px;min-width:180px}
 .if-bpmn-tools{display:flex;align-items:center;gap:6px}
-.if-bpmn-tools a{color:white;font-size:12px}
+.if-bpmn-tools button{display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:3px 6px;cursor:pointer}
+.if-bpmn-tools button svg{display:block}
+.if-bpmn-tools a{display:inline-flex;align-items:center;color:white;font-size:12px}
 .if-bpmn-card>p{padding:8px 12px;margin:0;font-size:12px}
+
+.if-bpmn-card:fullscreen,
+.if-bpmn-card:-webkit-full-screen,
+.if-bpmn-card.if-fullscreen-active{width:100vw!important;height:100vh!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:#ffffff!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;box-sizing:border-box!important;z-index:99999!important}
+.if-bpmn-card:fullscreen>header,
+.if-bpmn-card:-webkit-full-screen>header,
+.if-bpmn-card.if-fullscreen-active>header{position:absolute!important;top:10px!important;left:10px!important;right:10px!important;z-index:100!important;border-radius:20px!important;padding:6px 14px!important;background:rgba(7,91,154,0.9)!important;backdrop-filter:blur(8px)!important}
+.if-bpmn-card:fullscreen .if-bpmn-viewport,
+.if-bpmn-card:-webkit-full-screen .if-bpmn-viewport,
+.if-bpmn-card.if-fullscreen-active .if-bpmn-viewport{width:100vw!important;height:100vh!important;min-height:0!important;max-height:none!important;border:0!important;flex:1 1 auto!important;padding-top:55px!important;box-sizing:border-box!important;background:#ffffff!important}
+.if-bpmn-card:fullscreen>p,
+.if-bpmn-card:-webkit-full-screen>p,
+.if-bpmn-card.if-fullscreen-active>p{position:absolute!important;bottom:8px!important;left:10px!important;z-index:100!important}
 .if-bpmn-viewport{height:240px;min-height:180px;resize:vertical;overflow:hidden;background:#fff;color:#172b3a;position:relative}
 .if-bpmn-pill{display:inline-block;background:#ffdf5d;color:#241b00;border:1px solid #705500;border-radius:12px;padding:3px 8px;font:700 12px Arial,sans-serif;white-space:nowrap}
 .if-bpmn-reference{display:flex;gap:4px;white-space:nowrap}.if-connection-pill{background:#dbeafe;color:#123c68;border-color:#2563eb}
